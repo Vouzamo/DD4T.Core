@@ -437,18 +437,25 @@ namespace DD4T.Utils
         }
 
         private Dictionary<string, int> _expirationPerRegion = new Dictionary<string, int>();
+        private static object lockOnExpirationPerRegion = new object();
         public int GetExpirationForCacheRegion(string region)
         {
             if (!_expirationPerRegion.ContainsKey(region))
             {
-                string s = SafeGetConfigSettingAsString(string.Format(ConfigurationKeys.CacheSettingsPerRegion, region));
-                if (string.IsNullOrEmpty(s))
+                lock (lockOnExpirationPerRegion)
                 {
-                    _expirationPerRegion.Add(region, DefaultCacheSettings);
-                }
-                else
-                {
-                    _expirationPerRegion.Add(region, SafeGetConfigSettingAsInt(string.Format(ConfigurationKeys.CacheSettingsPerRegion, region)));
+                    if (!_expirationPerRegion.ContainsKey(region))
+                    {
+                        string s = SafeGetConfigSettingAsString(string.Format(ConfigurationKeys.CacheSettingsPerRegion, region));
+                        if (string.IsNullOrEmpty(s))
+                        {
+                            _expirationPerRegion.Add(region, DefaultCacheSettings);
+                        }
+                        else
+                        {
+                            _expirationPerRegion.Add(region, SafeGetConfigSettingAsInt(string.Format(ConfigurationKeys.CacheSettingsPerRegion, region)));
+                        }
+                    }
                 }
             }
             return _expirationPerRegion[region];
